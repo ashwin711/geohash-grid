@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GeoHash grid</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" href="geohash-grid.css" />
+  <script src="https://maps.googleapis.com/maps/api/js?v=3&libraries=places"></script>
+  <script src="markerwithlabel_packed.js"></script>
+  <script src="latlon-geohash.js"></script>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="gmnoprint" id="container" style="float:right;">
+    <div class="search-box"><button onclick="drawGrid();">Draw Grid</button>
+    <input type="text" name="search" id="search" /></div>
+    <div class="gm-style-mtc" style="float: right;">
+      <div class="label" draggable="false">Zoom: <span id="zoom" /></div>
+    </div>
+    <div class="gm-style-mtc" style="float: right;">
+      <div class="label" draggable="false">Extents: <span id="extents" /></div>
+    </div>
+  </div>
+  <script src="geohash-grid.js"></script>
+</body>
+</html>

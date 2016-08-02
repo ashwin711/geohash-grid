@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GeoHash Manual grid</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" href="css/geohash-grid.css" />
+  <script src="js/settings.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/markerwithlabel_packed.js"></script>
+  <script src="js/latlon-geohash.js"></script>
+</head>
+<body>
+  <div id="map"></div>
+    <textarea name="geohashes" id="geohashes"> </textarea> 
+  <div class="gmnoprint" id="container" style="float:right;">
+    <div class="search-box"><button onclick="drawBoxes();">Draw</button>
+    </div>
+    <div class="gm-style-mtc" style="float: right;">
+      <div class="label" draggable="false">Zoom: <span id="zoom" /></div>
+    </div>
+    <div class="gm-style-mtc" style="float: right;">
+      <div class="label" draggable="false">Extents: <span id="extents" /></div>
+    </div>
+  </div>
+  <script src="js/geohash-grid.js"></script>
+  <script type="text/javascript">
+    function drawBoxes(){
+      eraseGrid()
+      var geohashes = document.getElementById("geohashes").value;
+      geohashes = geohashes.split(",");
+      geohashes.forEach(function(geohash){
+        drawBox(geohash);
+      });
+      alert("Drew "+geohashes.length+ " boxes");
+      map.fitBounds(gridParts[0].getBounds())
+    }
+
+  </script>
+</body>
+</html>

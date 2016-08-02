@@ -1,0 +1,2 @@
+ var googleMapsKey = "";
+ var mapCenter = [12,77];

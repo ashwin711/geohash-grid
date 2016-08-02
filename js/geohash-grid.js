@@ -1,5 +1,6 @@
 'use strict';
 
+
 var map, zoomSpan, extentsSpan,
 	gridParts = [],
 	defaults = {
@@ -18,7 +19,7 @@ function initialize() {
 
 	map = new google.maps.Map(document.getElementById('map'), {
 		zoom: defaults.zoom,
-		center: new google.maps.LatLng(-27.593691984693564, -48.56170233339071),
+		center: new google.maps.LatLng(mapCenter[0],mapCenter[1]),
 		panControl: false,
 		streetViewControl: false
 	});
@@ -29,7 +30,6 @@ function initialize() {
 	google.maps.event.addListener(map, 'zoom_changed', updateZoom);
 	google.maps.event.addListener(map, 'bounds_changed', updateBounds);
 	google.maps.event.addListener(map, 'idle', mapIdle);
-	initAutocomplete();
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
@@ -114,22 +114,3 @@ function drawBox(hash) {
 	gridParts.push(marker);
 }
 
-function initAutocomplete() {
-
-  // Create the search box and link it to the UI element.
-  var input = document.getElementById('search');
-  var searchBox = new google.maps.places.SearchBox(input);
-  map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
-
-  // Bias the SearchBox results towards current map's viewport.
-  map.addListener('bounds_changed', function() {
-    searchBox.setBounds(map.getBounds());
-  });
-
-  // Listen for the event fired when the user selects a prediction and retrieve
-  // more details for that place.
-  searchBox.addListener('places_changed', function() {
-    var places = searchBox.getPlaces();
-    map.setCenter(places[0].geometry.location);
-  });
-}

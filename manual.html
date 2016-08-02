@@ -27,7 +27,8 @@
   <script type="text/javascript">
     function drawBoxes(){
       eraseGrid()
-      var geohashes = document.getElementById("geohashes").value;
+      var geohashes = document.getElementById("geohashes").value.trim();
+      geohashes = geohashes.replace(" | ",",");
       geohashes = geohashes.split(",");
       geohashes.forEach(function(geohash){
         drawBox(geohash);

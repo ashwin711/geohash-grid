@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Plot & Compare Points/Polygons/Geohashes</title>
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.3/leaflet.css"/>
+  <style type="text/css">
+    html, body{
+      width: 99%;
+      height: 100%;
+    }
+    .container{
+      width: 100%;
+      height: 100%;
+    }
+    #map{
+      width: 100%;
+      height: 800px;
+    }
+    .left-pane{
+      width: 25%;
+      float: left;
+    }
+    .right-pane{
+      margin: 0 auto;
+      padding: 0;
+      width: 75%;
+      float: right;
+    }
+    .set-1{
+      height: 350px;
+    }
+    .info{
+      height: 100px;
+    }
+    textarea{
+      height: 200px;
+    }
+    .leaflet-div-icon-1 {
+      background:blue;
+      border:5px solid rgba(255,255,255,0.5);
+      color:blue;
+      font-weight:bold;
+      text-align:center;
+      border-radius:50%;
+      line-height:30px;
+      line-width:30px;
+      height:30px;
+      width:30px;
+    }
+    .leaflet-div-icon-2 {
+      background:red;
+      border:5px solid rgba(255,255,255,0.5);
+      color:red;
+      font-weight:bold;
+      text-align:center;
+      border-radius:50%;
+      line-height:30px;
+      line-width:30px;
+      height:30px;
+      width:30px;
+    }
+    .map-tooltip{
+      background: white;
+      color: green;
+
+    }
+  </style>
+ 
+</head>
+<body>
+
+<div class="container">
+  <div class="left-pane">
+    <div class="info">
+      <h3>Plot and compare Points/Polygons/Geohashes</h3>
+      <p>
+      Format: lat1,lng1|lat2,lng2 OR lng1,lat1|lng2,lat2 OR geohash1,geohash2 OR GeoJson Feature
+      </p>
+    </div>
+    <div class="set-1">
+      <input type="radio" name="set-1-geoType" value="latlng" checked="checked">Lat/Lon <br />
+      <input type="radio" name="set-1-geoType" value="lnglat">Lng/Lat <br />
+      <input type="radio" name="set-1-geoType" value="geohash">Geohash <br />
+      <input type="radio" name="set-1-geoType" value="geojson">GeoJson Feature <br />
+      <textarea id="set-1-data" name="set-1-data">13.1,77.1|13.2,77.2</textarea> <br />
+      <button onclick="Util.onDrawClick('1');">Draw</button>
+    </div>
+    <div class="set-2">
+      <input type="radio" name="set-2-geoType" value="latlng" checked="checked">Lat/Lon <br />
+      <input type="radio" name="set-1-geoType" value="lnglat">Lng/Lat <br />
+      <input type="radio" name="set-2-geoType" value="geohash">Geohash <br />
+      <input type="radio" name="set-2-geoType" value="geojson">GeoJson Feature <br />
+      <textarea id="set-2-data" name="set-2-data">12.7,77.2|12.8,77.1</textarea> <br />
+      <button onclick="Util.onDrawClick('2');">Draw</button>
+    </div>
+  </div>
+  <div class="right-pane">
+    <div id="map">
+
+    </div>
+  </div>
+</div>
+
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.3/leaflet.js"></script>
+  <script type="text/javascript">
+  //Ref: https://github.com/chrisveness/latlon-geohash/blob/master/latlon-geohash.js
+    var Geohash = {};
+
+    /* (Geohash-specific) Base32 map */
+    Geohash.base32 = '0123456789bcdefghjkmnpqrstuvwxyz';
+
+
+    Geohash.bounds = function(geohash) {
+        if (geohash.length === 0) throw new Error('Invalid geohash');
+
+        geohash = geohash.toLowerCase();
+
+        var evenBit = true;
+        var latMin =  -90, latMax =  90;
+        var lonMin = -180, lonMax = 180;
+
+        for (var i=0; i<geohash.length; i++) {
+            var chr = geohash.charAt(i);
+            var idx = Geohash.base32.indexOf(chr);
+            if (idx == -1) throw new Error('Invalid geohash');
+
+            for (var n=4; n>=0; n--) {
+                var bitN = idx >> n & 1;
+                if (evenBit) {
+                    // longitude
+                    var lonMid = (lonMin+lonMax) / 2;
+                    if (bitN == 1) {
+                        lonMin = lonMid;
+                    } else {
+                        lonMax = lonMid;
+                    }
+                } else {
+                    // latitude
+                    var latMid = (latMin+latMax) / 2;
+                    if (bitN == 1) {
+                        latMin = latMid;
+                    } else {
+                        latMax = latMid;
+                    }
+                }
+                evenBit = !evenBit;
+            }
+        }
+
+        var bounds = {
+            sw: { lat: latMin, lon: lonMin },
+            ne: { lat: latMax, lon: lonMax },
+            arr: [[latMax,lonMax],[latMin,lonMin]]
+        };
+
+        return bounds;
+    };
+
+
+    var Util={};
+    Util.map;
+    Util.markerLayers={};
+    Util.geohashLayers={};
+    Util.geojsonLayers={};
+
+
+    Util.initMap = function(){
+      var osmUrl = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+      var osmAttribution = 'Map data © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors,' +
+                        ' <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
+      var osmLayer = new L.TileLayer(osmUrl, {maxZoom: 18, attribution: osmAttribution});
+      Util.map = new L.Map('map');
+      Util.map.setView(new L.LatLng(13.1,77.6), 10);
+      Util.map.addLayer(osmLayer);
+      ["1","2"].forEach(function(id){
+        Util.markerLayers[id] = L.layerGroup();
+        Util.geohashLayers[id] = L.layerGroup();
+        Util.geojsonLayers[id] = L.layerGroup();
+        Util.map.addLayer(Util.markerLayers[id]);
+        Util.map.addLayer(Util.geohashLayers[id]);
+        Util.map.addLayer(Util.geojsonLayers[id]);
+      });
+      Util.map.on('click',function(e){
+        var popLocation= e.latlng;
+        var popup = L.popup()
+        .setLatLng(popLocation)
+        .setContent(popLocation.lat+','+popLocation.lng)
+        .openOn(Util.map);
+      })
+    }
+
+    Util.drawMarkers = function(lat,lng,setId){
+      var marker = L.marker([lat, lng],{icon: Util.drawIcon(setId)}).addTo(Util.markerLayers[setId]);
+      marker.bindTooltip([lat,lng].join(","))
+    }
+
+    Util.drawRectangle = function(geohash,setId){
+      setId = String(setId);
+      var colors = {"1": "blue", "2": "red"};
+      var bounds = Geohash.bounds(geohash).arr;
+      var r = L.rectangle(bounds, {color: colors[setId], weight: 2}).addTo(Util.geohashLayers[setId]);
+      r.bindTooltip(geohash,{permanent: true,direction:"center"});//,className: 'map-tooltip'});
+    }
+
+    Util.plotGeoJson = function(json,setId){
+      setId = String(setId);
+      var colors={"1": "blue", "2": "red"};
+      var gStyle = {color: colors[setId]};
+      L.geoJSON(json,{style: gStyle}).addTo(Util.geojsonLayers[setId]);
+    }
+
+    Util.drawIcon = function(iType){
+      var iclassName = 'leaflet-div-icon-1';
+      if ( iType !== undefined){
+        iclassName = 'leaflet-div-icon-'+iType;
+      }
+      return L.divIcon({className: iclassName});
+    }
+
+    Util.drawSet = function(set){
+      set = String(set);
+      Util.markerLayers[set].clearLayers();
+      Util.geohashLayers[set].clearLayers();
+      Util.geojsonLayers[set].clearLayers();
+      var content = $("#set-"+set+"-data").val();
+      var geoType = $('input[name=set-'+set+'-geoType]:checked').val();
+      if (geoType=="latlng" || geoType=="lnglat"){
+        content = content.split("|");
+        content.forEach(function(point){
+          var point = point.split(",");
+          if (geoType=="latlng"){
+            Util.drawMarkers(point[0],point[1],set);
+          }
+          if (geoType=="lnglat"){
+            Util.drawMarkers(point[1],point[0],set);
+          }
+        });
+      }
+      if (geoType=="geohash"){
+        content = content.split(",");
+        content.forEach(function(g){
+          Util.drawRectangle(g,set);
+        });
+      }
+      if (geoType=="geojson"){
+          Util.plotGeoJson(JSON.parse(content),set);
+      }
+    }
+
+    Util.onDrawClick = function(set){
+      Util.drawSet(set);
+      alert("Done!");
+    }
+
+    Util.start = function(){
+      Util.initMap();
+      Util.drawSet("1");
+      Util.drawSet("2");
+    }
+    Util.start();
+  </script>
+</body>
+</html>
